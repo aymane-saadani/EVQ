@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Find Stations — EVQ</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .layout { display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; align-items: start; }
+    @media(max-width:900px){ .layout { grid-template-columns: 1fr; } }
+
+    .filter-panel .card { position: sticky; top: 90px; }
+    .filter-title { font-family:'Syne',sans-serif; font-size:1rem; font-weight:600; margin-bottom:1.25rem; }
+
+    .range-label { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem; }
+    input[type=range] {
+      -webkit-appearance:none; width:100%; height:4px;
+      background: linear-gradient(90deg, var(--green) 50%, var(--bg3) 50%);
+      border-radius:2px; outline:none; border:none; padding:0;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance:none; width:16px; height:16px;
+      border-radius:50%; background:var(--green); cursor:pointer;
+      box-shadow: 0 0 8px var(--green-glow);
+    }
+
+    .checkbox-group { display:flex; flex-direction:column; gap:0.6rem; }
+    .checkbox-item { display:flex; align-items:center; gap:10px; cursor:pointer; }
+    .checkbox-item input[type=checkbox] {
+      width:16px; height:16px; accent-color:var(--green);
+      cursor:pointer; flex-shrink:0;
+    }
+    .checkbox-item span { font-size:0.9rem; color:var(--text2); }
+
+    .toggle-switch { display:flex; align-items:center; justify-content:space-between; }
+    .switch { position:relative; display:inline-block; width:42px; height:24px; }
+    .switch input { opacity:0; width:0; height:0; }
+    .slider-sw {
+      position:absolute; cursor:pointer; inset:0;
+      background:var(--bg3); border:1px solid var(--border2); border-radius:24px;
+      transition:.2s;
+    }
+    .slider-sw::before {
+      content:''; position:absolute; width:16px; height:16px;
+      left:3px; top:3px; background:var(--text3); border-radius:50%; transition:.2s;
+    }
+    .switch input:checked + .slider-sw { background:var(--green-dim); border-color:var(--green); }
+    .switch input:checked + .slider-sw::before { transform:translateX(18px); background:var(--green); }
+
+    /* Station list */
+    .station-card {
+      background:var(--card); border:1px solid var(--border2);
+      border-radius:var(--radius); padding:1.25rem;
+      display:grid; grid-template-columns:1fr auto;
+      gap:0.75rem; transition:all 0.2s; cursor:pointer;
+    }
+    .station-card:hover { border-color:var(--border); background:var(--card2); }
+    .station-card.selected { border-color:var(--green); background:rgba(0,230,118,0.04); }
+
+    .station-name { font-family:'Syne',sans-serif; font-weight:600; margin-bottom:0.3rem; }
+    .station-meta { font-size:0.82rem; color:var(--text2); margin-bottom:0.5rem; }
+
+    .map-placeholder {
+      background:var(--card); border:1px solid var(--border2);
+      border-radius:var(--radius); height:420px;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:1rem; color:var(--text2); margin-bottom:1.5rem;
+      position:relative; overflow:hidden;
+    }
+    .map-placeholder::before {
+      content:''; position:absolute; inset:0;
+      background-image:
+        linear-gradient(rgba(0,230,118,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,230,118,0.04) 1px, transparent 1px);
+      background-size:40px 40px;
+    }
+    .map-pin {
+      font-size:2rem; animation:float 3s ease-in-out infinite; position:relative;
+    }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    .map-text { position:relative; font-size:0.9rem; }
+
+    /* Detail panel */
+    .detail-panel {
+      background:var(--card); border:1px solid var(--border2);
+      border-radius:var(--radius); padding:1.5rem;
+      display:none;
+    }
+    .detail-panel.open { display:block; animation:fadeIn 0.3s ease; }
+    .detail-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.25rem; }
+    .detail-title { font-family:'Syne',sans-serif; font-size:1.2rem; font-weight:700; }
+    .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.25rem; }
+    .detail-item label { font-size:0.78rem; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px; }
+    .detail-item p { font-size:0.95rem; color:var(--text); margin-top:2px; }
+
+    .amenity-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:1.25rem; }
+    .amenity-chip {
+      background:var(--bg3); border:1px solid var(--border2);
+      padding:4px 12px; border-radius:20px; font-size:0.8rem; color:var(--text2);
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a class="nav-logo" href="index.html">EV<span>Q</span></a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="find-stations.html" class="active">Find Stations</a>
+      <a href="schedule.html">Schedule</a>
+      <a href="history.html">History</a>
+      <a href="settings.html">Settings</a>
+    </div>
+    <a href="find-stations.html" class="btn btn-primary btn-sm">Find Stations</a>
+  </nav>
+
+  <main>
+    <div class="page">
+      <div class="page-header">
+        <h1>Find Charging Stations</h1>
+        <p>Live availability near you</p>
+      </div>
+
+      <div class="layout">
+        <!-- Filters -->
+        <aside class="filter-panel">
+          <div class="card">
+            <p class="filter-title">Filters</p>
+
+            <div class="form-group">
+              <label>Charging Speed</label>
+              <select id="speed-filter">
+                <option value="all">All Speeds</option>
+                <option value="fast">Fast (50kW+)</option>
+                <option value="standard">Standard (22kW)</option>
+                <option value="slow">Slow (3–7kW)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Plug Type</label>
+              <div class="checkbox-group">
+                <label class="checkbox-item"><input type="checkbox" checked> <span>CCS</span></label>
+                <label class="checkbox-item"><input type="checkbox" checked> <span>CHAdeMO</span></label>
+                <label class="checkbox-item"><input type="checkbox" checked> <span>Type 2</span></label>
+                <label class="checkbox-item"><input type="checkbox"> <span>Tesla</span></label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="range-label">
+                <label>Max Distance</label>
+                <span id="range-val" style="color:var(--green);font-size:0.85rem">5 km</span>
+              </div>
+              <input type="range" min="1" max="20" value="5" id="range-slider">
+            </div>
+
+            <div class="form-group">
+              <div class="toggle-switch">
+                <label style="margin:0">Renewable Energy Only</label>
+                <label class="switch">
+                  <input type="checkbox" checked id="renewable-toggle">
+                  <span class="slider-sw"></span>
+                </label>
+              </div>
+            </div>
+
+            <hr class="divider">
+            <button class="btn btn-primary" style="width:100%" onclick="applyFilters()">Apply Filters</button>
+          </div>
+        </aside>
+
+        <!-- Right panel -->
+        <div>
+          <div class="flex-between mb-3">
+            <div class="toggle-group">
+              <button class="toggle-btn active" onclick="setView('map',this)">🗺 Map</button>
+              <button class="toggle-btn" onclick="setView('list',this)">☰ List</button>
+            </div>
+            <span id="result-count" style="color:var(--text2);font-size:0.85rem">11 stations found</span>
+          </div>
+
+          <!-- Map -->
+          <div id="map-view">
+            <div class="map-placeholder">
+              <div class="map-pin">📍</div>
+              <p class="map-text">Interactive map — stations loaded near your location</p>
+              <p style="font-size:0.8rem;color:var(--text3);position:relative">Allow location access to see nearby stations</p>
+            </div>
+          </div>
+
+          <!-- List -->
+          <div id="list-view" style="display:none">
+            <div style="display:flex;flex-direction:column;gap:0.75rem" id="stations-list"></div>
+          </div>
+
+          <!-- Detail Panel -->
+          <div class="detail-panel mt-3" id="detail-panel">
+            <div class="detail-header">
+              <div>
+                <div class="detail-title" id="detail-name">Green Energy Station</div>
+                <div style="color:var(--text2);font-size:0.85rem">⭐ 4.5 (24 reviews)</div>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="closeDetail()">✕ Close</button>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item"><label>Address</label><p id="detail-address">123 Electric Ave</p></div>
+              <div class="detail-item"><label>Distance</label><p id="detail-dist">1.2 km</p></div>
+              <div class="detail-item"><label>Speed</label><p id="detail-speed">50kW DC Fast</p></div>
+              <div class="detail-item"><label>Price</label><p id="detail-price">$0.35/kWh</p></div>
+              <div class="detail-item"><label>Connectors</label><p id="detail-conn">CCS, Type 2</p></div>
+              <div class="detail-item"><label>Energy Source</label><p style="color:var(--green)">100% Renewable ♻</p></div>
+            </div>
+            <div class="amenity-chips">
+              <span class="amenity-chip">☕ Café</span>
+              <span class="amenity-chip">🍽 Restaurant</span>
+              <span class="amenity-chip">🛍 Shopping</span>
+              <span class="amenity-chip">🚻 Restroom</span>
+            </div>
+            <hr class="divider">
+            <h3 style="font-family:'Syne',sans-serif;font-size:1rem;margin-bottom:1rem">Book This Station</h3>
+            <div class="grid-2">
+              <div class="form-group"><label>Date</label><input type="date" id="book-date"></div>
+              <div class="form-group"><label>Time</label><input type="time" id="book-time" value="14:00"></div>
+            </div>
+            <div class="form-group">
+              <label>Duration</label>
+              <select id="book-duration">
+                <option>1 hour</option><option selected>2 hours</option>
+                <option>4 hours</option><option>6 hours</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="bookStation()">Book Now →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Booking Confirmed Modal -->
+  <div class="modal-overlay" id="booking-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>✅ Booking Confirmed!</h2>
+        <button class="modal-close" onclick="closeModal('booking-modal')">×</button>
+      </div>
+      <div class="alert alert-success">Your charging slot has been reserved successfully.</div>
+      <div style="display:grid;gap:0.75rem;margin-top:1rem">
+        <div class="flex-between"><span style="color:var(--text2)">Station</span><strong id="conf-station">—</strong></div>
+        <div class="flex-between"><span style="color:var(--text2)">Date &amp; Time</span><strong id="conf-datetime">—</strong></div>
+        <div class="flex-between"><span style="color:var(--text2)">Duration</span><strong id="conf-duration">—</strong></div>
+        <div class="flex-between"><span style="color:var(--text2)">Est. Cost</span><strong style="color:var(--green)" id="conf-cost">—</strong></div>
+      </div>
+      <div class="flex gap-2 mt-3">
+        <a href="schedule.html" class="btn btn-primary" style="flex:1">View in Schedule</a>
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal('booking-modal')">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <footer><p>© 2025 EVQ — Smart EV Charging Platform</p></footer>
+  <script src="js/main.js"></script>
+  <script>
+    const stations = [
+      { id:1, name:'Green Energy Station', dist:'1.2 km', speed:'50kW', conn:'CCS, Type 2', price:'$0.35/kWh', addr:'123 Electric Ave', status:'available' },
+      { id:2, name:'SolarCharge Hub', dist:'0.9 km', speed:'75kW', conn:'CCS, CHAdeMO', price:'$0.28/kWh', addr:'45 Solar Street', status:'available' },
+      { id:3, name:'EcoCharge Point', dist:'2.4 km', speed:'22kW', conn:'Type 2', price:'$0.22/kWh', addr:'78 Green Blvd', status:'busy' },
+      { id:4, name:'VoltStop Station', dist:'1.8 km', speed:'100kW', conn:'CCS, Type 2', price:'$0.40/kWh', addr:'12 Volt Lane', status:'available' },
+      { id:5, name:'RapidEV Charger', dist:'0.5 km', speed:'120kW', conn:'CCS, CHAdeMO', price:'$0.45/kWh', addr:'5 Rapid Rd', status:'available' },
+      { id:6, name:'EcoVolt Plug', dist:'4.1 km', speed:'60kW', conn:'Type 2', price:'$0.30/kWh', addr:'90 Eco Park', status:'maintenance' },
+      { id:7, name:'SunVolt Station', dist:'1.3 km', speed:'90kW', conn:'CCS, Type 2', price:'$0.38/kWh', addr:'33 Sun Ave', status:'available' },
+      { id:8, name:'ZeroCarbon Hub', dist:'2.9 km', speed:'30kW', conn:'Type 2, CCS', price:'$0.18/kWh', addr:'67 Zero St', status:'available' },
+      { id:9, name:'ChargeGreen Point', dist:'0.7 km', speed:'45kW', conn:'Type 2', price:'$0.25/kWh', addr:'14 Green Sq', status:'busy' },
+      { id:10, name:'UrbanEV Charge', dist:'3.5 km', speed:'80kW', conn:'CCS, CHAdeMO', price:'$0.36/kWh', addr:'21 Urban Way', status:'available' },
+      { id:11, name:'ChargePoint Express', dist:'2.1 km', speed:'150kW', conn:'CCS', price:'$0.50/kWh', addr:'99 Express Blvd', status:'available' },
+    ];
+
+    let selected = null;
+
+    function statusColor(s) {
+      if (s === 'available') return 'dot-green';
+      if (s === 'busy') return 'dot-orange';
+      return 'dot-red';
+    }
+
+    function renderList(list) {
+      const container = document.getElementById('stations-list');
+      container.innerHTML = list.map(s => `
+        <div class="station-card ${selected === s.id ? 'selected' : ''}" onclick="selectStation(${s.id})">
+          <div>
+            <div class="station-name">
+              <span class="status-dot ${statusColor(s.status)}"></span>${s.name}
+            </div>
+            <div class="station-meta">📍 ${s.dist} away · ${s.addr}</div>
+            <div>
+              <span class="tag tag-green">${s.speed}</span>
+              ${s.conn.split(', ').map(c=>`<span class="tag tag-blue">${c}</span>`).join('')}
+              <span class="tag tag-green">♻ Renewable</span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--green)">${s.price}</div>
+            <button class="btn btn-outline btn-sm mt-1">View →</button>
+          </div>
+        </div>
+      `).join('');
+      document.getElementById('result-count').textContent = list.length + ' stations found';
+    }
+
+    function selectStation(id) {
+      selected = id;
+      renderList(stations);
+      const s = stations.find(x => x.id === id);
+      document.getElementById('detail-name').textContent = s.name;
+      document.getElementById('detail-address').textContent = s.addr;
+      document.getElementById('detail-dist').textContent = s.dist;
+      document.getElementById('detail-speed').textContent = s.speed + ' DC Fast';
+      document.getElementById('detail-price').textContent = s.price;
+      document.getElementById('detail-conn').textContent = s.conn;
+      document.getElementById('detail-panel').classList.add('open');
+      document.getElementById('detail-panel').scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+
+    function closeDetail() {
+      document.getElementById('detail-panel').classList.remove('open');
+      selected = null;
+      renderList(stations);
+    }
+
+    function setView(view, btn) {
+      document.getElementById('map-view').style.display = view === 'map' ? 'block' : 'none';
+      document.getElementById('list-view').style.display = view === 'list' ? 'block' : 'none';
+      btn.closest('.toggle-group').querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function applyFilters() {
+      showToast('Filters applied — results updated', 'success');
+    }
+
+    function bookStation() {
+      const name = document.getElementById('detail-name').textContent;
+      const date = document.getElementById('book-date').value || '2025-06-15';
+      const time = document.getElementById('book-time').value || '14:00';
+      const dur = document.getElementById('book-duration').value;
+      document.getElementById('conf-station').textContent = name;
+      document.getElementById('conf-datetime').textContent = date + ' at ' + time;
+      document.getElementById('conf-duration').textContent = dur;
+      document.getElementById('conf-cost').textContent = '$' + (parseFloat(dur) * 6.5).toFixed(2) + ' (est.)';
+      openModal('booking-modal');
+    }
+
+    // Range slider
+    const rs = document.getElementById('range-slider');
+    rs.addEventListener('input', () => {
+      document.getElementById('range-val').textContent = rs.value + ' km';
+    });
+
+    // Init
+    renderList(stations);
+
+    // Set default date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('book-date').value = today;
+  </script>
+</body>
+</html>
