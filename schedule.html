@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Schedule — EVQ</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .booking-card {
+      background:var(--card); border:1px solid var(--border2);
+      border-radius:var(--radius); padding:1.5rem;
+      display:grid; grid-template-columns:auto 1fr auto;
+      gap:1.25rem; align-items:center; transition:border-color 0.2s;
+    }
+    .booking-card:hover { border-color:var(--border); }
+
+    .time-block {
+      background:var(--green-dim); border:1px solid var(--border);
+      border-radius:var(--radius-sm); padding:0.75rem 1rem;
+      text-align:center; min-width:80px;
+    }
+    .time-block .time { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:700; color:var(--green); }
+    .time-block .date { font-size:0.75rem; color:var(--text2); margin-top:2px; }
+
+    .booking-info h3 { font-family:'Syne',sans-serif; font-weight:600; margin-bottom:0.3rem; }
+    .booking-info p { color:var(--text2); font-size:0.88rem; }
+
+    .empty-state {
+      text-align:center; padding:4rem 2rem; color:var(--text2);
+    }
+    .empty-state .icon { font-size:3rem; margin-bottom:1rem; opacity:0.4; }
+    .empty-state h3 { font-family:'Syne',sans-serif; color:var(--text); margin-bottom:0.5rem; }
+
+    .calendar-nav { display:flex; align-items:center; gap:1rem; }
+    .calendar-nav button { background:var(--bg3); border:1px solid var(--border2); color:var(--text); padding:0.4rem 0.8rem; border-radius:8px; cursor:pointer; font-size:1rem; }
+    .calendar-nav button:hover { border-color:var(--green); }
+    .month-label { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:600; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a class="nav-logo" href="index.html"><img src="images/logo.png" alt="EVQ"><span class="nav-logo-text">EVQ</span></a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="find-stations.html">Find Stations</a>
+      <a href="schedule.html" class="active">Schedule</a>
+      <a href="history.html">History</a>
+      <a href="settings.html">Settings</a>
+    </div>
+    <a href="find-stations.html" class="btn btn-primary btn-sm">Find Stations</a>
+  </nav>
+
+  <main>
+    <div class="page">
+      <div class="page-header flex-between">
+        <div>
+          <h1>My Schedule</h1>
+          <p>Upcoming charging sessions</p>
+        </div>
+        <a href="find-stations.html" class="btn btn-primary">+ New Booking</a>
+      </div>
+
+      <!-- Calendar nav -->
+      <div class="card mb-3">
+        <div class="flex-between">
+          <div class="calendar-nav">
+            <button onclick="prevMonth()">←</button>
+            <span class="month-label" id="month-label">June 2025</span>
+            <button onclick="nextMonth()">→</button>
+          </div>
+          <div class="toggle-group">
+            <button class="toggle-btn active">Week</button>
+            <button class="toggle-btn">Month</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming sessions -->
+      <h2 style="font-family:'Syne',sans-serif;font-size:1.1rem;margin-bottom:1rem;color:var(--text2)">Upcoming</h2>
+      <div style="display:flex;flex-direction:column;gap:0.75rem" id="upcoming-list"></div>
+
+      <hr class="divider">
+
+      <h2 style="font-family:'Syne',sans-serif;font-size:1.1rem;margin-bottom:1rem;color:var(--text2)">Past (This Month)</h2>
+      <div style="display:flex;flex-direction:column;gap:0.75rem" id="past-list"></div>
+    </div>
+  </main>
+
+  <!-- Cancel Modal -->
+  <div class="modal-overlay" id="cancel-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Cancel Booking</h2>
+        <button class="modal-close" onclick="closeModal('cancel-modal')">×</button>
+      </div>
+      <p style="color:var(--text2);margin-bottom:1.5rem">Are you sure you want to cancel this booking? This action cannot be undone.</p>
+      <div class="flex gap-2">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal('cancel-modal')">Keep Booking</button>
+        <button class="btn" style="flex:1;background:var(--danger);color:#fff" onclick="confirmCancel()">Yes, Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <footer><p>© 2025 EVQ — Smart EV Charging Platform</p></footer>
+  <script src="js/main.js"></script>
+  <script>
+    const upcoming = [
+      { station:'RapidEV Charger', addr:'5 Rapid Rd', date:'Jun 15', time:'14:00', dur:'2h', cost:'$9.00', status:'confirmed' },
+      { station:'SunVolt Station', addr:'33 Sun Ave', date:'Jun 18', time:'09:30', dur:'1h', cost:'$3.80', status:'confirmed' },
+      { station:'VoltStop Station', addr:'12 Volt Lane', date:'Jun 22', time:'11:00', dur:'4h', cost:'$16.00', status:'pending' },
+    ];
+
+    const past = [
+      { station:'Green Energy Station', addr:'123 Electric Ave', date:'Jun 5', time:'15:00', dur:'2h', cost:'$7.00', status:'completed' },
+      { station:'SolarCharge Hub', addr:'45 Solar Street', date:'Jun 2', time:'10:00', dur:'1h', cost:'$2.80', status:'completed' },
+    ];
+
+    let cancelTarget = null;
+
+    function statusTag(s) {
+      if (s === 'confirmed') return '<span class="tag tag-green">✓ Confirmed</span>';
+      if (s === 'pending') return '<span class="tag tag-orange">⏳ Pending</span>';
+      if (s === 'completed') return '<span class="tag tag-blue">✔ Completed</span>';
+      return '';
+    }
+
+    function renderBookings(list, containerId, showCancel) {
+      const el = document.getElementById(containerId);
+      if (!list.length) {
+        el.innerHTML = '<div class="empty-state"><div class="icon">📅</div><h3>No sessions here</h3><p>Book a station to get started</p></div>';
+        return;
+      }
+      el.innerHTML = list.map((b, i) => `
+        <div class="booking-card fade-in" style="animation-delay:${i*0.06}s">
+          <div class="time-block">
+            <div class="time">${b.time}</div>
+            <div class="date">${b.date}</div>
+          </div>
+          <div class="booking-info">
+            <h3>${b.station}</h3>
+            <p>📍 ${b.addr} · ⏱ ${b.dur} · 💚 ${b.cost}</p>
+            <div style="margin-top:0.5rem">${statusTag(b.status)}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+            ${showCancel ? `<button class="btn btn-outline btn-sm" onclick="cancelBooking(${i})">Cancel</button>` : ''}
+            <button class="btn btn-outline btn-sm" onclick="showToast('Receipt downloaded','success')">Receipt</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function cancelBooking(i) {
+      cancelTarget = i;
+      openModal('cancel-modal');
+    }
+
+    function confirmCancel() {
+      upcoming.splice(cancelTarget, 1);
+      renderBookings(upcoming, 'upcoming-list', true);
+      closeModal('cancel-modal');
+      showToast('Booking cancelled successfully', 'success');
+    }
+
+    // Month navigation
+    let month = 5; // June (0-indexed)
+    let year = 2025;
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+    function updateMonthLabel() {
+      document.getElementById('month-label').textContent = months[month] + ' ' + year;
+    }
+
+    function prevMonth() {
+      month--; if (month < 0) { month = 11; year--; }
+      updateMonthLabel();
+    }
+
+    function nextMonth() {
+      month++; if (month > 11) { month = 0; year++; }
+      updateMonthLabel();
+    }
+
+    renderBookings(upcoming, 'upcoming-list', true);
+    renderBookings(past, 'past-list', false);
+  </script>
+</body>
+</html>

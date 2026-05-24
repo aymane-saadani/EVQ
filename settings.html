@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — EVQ</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .settings-layout { display:grid; grid-template-columns:220px 1fr; gap:1.5rem; align-items:start; }
+    @media(max-width:768px){ .settings-layout { grid-template-columns:1fr; } }
+
+    .settings-nav { position:sticky; top:90px; }
+    .settings-nav a {
+      display:flex; align-items:center; gap:10px;
+      padding:0.65rem 1rem; border-radius:8px;
+      color:var(--text2); text-decoration:none; font-size:0.9rem;
+      transition:all 0.2s; margin-bottom:2px;
+    }
+    .settings-nav a:hover, .settings-nav a.active {
+      color:var(--green); background:var(--green-dim);
+    }
+    .settings-nav a .icon { font-size:1.1rem; }
+
+    .settings-section { margin-bottom:2rem; }
+    .section-heading {
+      font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:600;
+      margin-bottom:1.25rem; padding-bottom:0.75rem;
+      border-bottom:1px solid var(--border2);
+    }
+
+    .setting-row {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:1rem 0; border-bottom:1px solid var(--border2);
+    }
+    .setting-row:last-child { border-bottom:none; }
+    .setting-info h4 { font-size:0.95rem; margin-bottom:2px; }
+    .setting-info p { font-size:0.82rem; color:var(--text2); }
+
+    .switch { position:relative; display:inline-block; width:42px; height:24px; }
+    .switch input { opacity:0; width:0; height:0; }
+    .slider-sw {
+      position:absolute; cursor:pointer; inset:0;
+      background:var(--bg3); border:1px solid var(--border2); border-radius:24px; transition:.2s;
+    }
+    .slider-sw::before {
+      content:''; position:absolute; width:16px; height:16px;
+      left:3px; top:3px; background:var(--text3); border-radius:50%; transition:.2s;
+    }
+    .switch input:checked + .slider-sw { background:var(--green-dim); border-color:var(--green); }
+    .switch input:checked + .slider-sw::before { transform:translateX(18px); background:var(--green); }
+
+    .avatar {
+      width:72px; height:72px; border-radius:50%;
+      background:var(--green-dim); border:2px solid var(--green);
+      display:flex; align-items:center; justify-content:center;
+      font-family:'Syne',sans-serif; font-size:1.6rem; font-weight:700;
+      color:var(--green); margin-bottom:1rem;
+    }
+
+    .vehicle-card {
+      background:var(--bg3); border:1px solid var(--border2);
+      border-radius:var(--radius-sm); padding:1rem; margin-bottom:0.75rem;
+      display:flex; align-items:center; gap:1rem;
+    }
+    .vehicle-icon { font-size:2rem; }
+    .vehicle-info h4 { font-size:0.95rem; }
+    .vehicle-info p { font-size:0.82rem; color:var(--text2); }
+
+    .plan-card {
+      background:var(--green-dim); border:1px solid var(--border);
+      border-radius:var(--radius); padding:1.25rem; margin-bottom:1rem;
+    }
+    .plan-name { font-family:'Syne',sans-serif; font-weight:700; color:var(--green); font-size:1.1rem; }
+    .plan-desc { color:var(--text2); font-size:0.88rem; margin-top:4px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a class="nav-logo" href="index.html"><img src="images/logo.png" alt="EVQ"><span class="nav-logo-text">EVQ</span></a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="find-stations.html">Find Stations</a>
+      <a href="schedule.html">Schedule</a>
+      <a href="history.html">History</a>
+      <a href="settings.html" class="active">Settings</a>
+    </div>
+    <a href="find-stations.html" class="btn btn-primary btn-sm">Find Stations</a>
+  </nav>
+
+  <main>
+    <div class="page">
+      <div class="page-header">
+        <h1>Settings</h1>
+        <p>Manage your account and preferences</p>
+      </div>
+
+      <div class="settings-layout">
+        <!-- Side nav -->
+        <nav class="settings-nav card">
+          <a href="#profile" class="active"><span class="icon">👤</span> Profile</a>
+          <a href="#vehicle"><span class="icon">🚗</span> Vehicle</a>
+          <a href="#notifications"><span class="icon">🔔</span> Notifications</a>
+          <a href="#payment"><span class="icon">💳</span> Payment</a>
+          <a href="#plan"><span class="icon">⚡</span> Plan</a>
+          <a href="#privacy"><span class="icon">🔒</span> Privacy</a>
+        </nav>
+
+        <!-- Content -->
+        <div>
+          <!-- Profile -->
+          <div class="card settings-section" id="profile">
+            <h2 class="section-heading">Profile</h2>
+            <div class="flex gap-2 mb-3" style="align-items:center">
+              <div class="avatar">AS</div>
+              <div>
+                <div style="font-family:'Syne',sans-serif;font-weight:600">Aymane Saadani</div>
+                <div style="color:var(--text2);font-size:0.85rem">aymane@evq.io</div>
+                <button class="btn btn-outline btn-sm mt-1" onclick="showToast('Photo updated','success')">Change Photo</button>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="form-group"><label>First Name</label><input value="Aymane"></div>
+              <div class="form-group"><label>Last Name</label><input value="Saadani"></div>
+              <div class="form-group"><label>Email</label><input type="email" value="aymane@evq.io"></div>
+              <div class="form-group"><label>Phone</label><input type="tel" value="+212 6XX XXX XXX"></div>
+            </div>
+            <button class="btn btn-primary" onclick="showToast('Profile saved','success')">Save Changes</button>
+          </div>
+
+          <!-- Vehicle -->
+          <div class="card settings-section" id="vehicle">
+            <h2 class="section-heading">My Vehicles</h2>
+            <div class="vehicle-card">
+              <div class="vehicle-icon">🚗</div>
+              <div class="vehicle-info" style="flex:1">
+                <h4>Tesla Model 3</h4>
+                <p>CCS · 75 kWh battery · Range: 358 mi</p>
+              </div>
+              <span class="tag tag-green">Primary</span>
+            </div>
+            <div class="vehicle-card">
+              <div class="vehicle-icon">🚙</div>
+              <div class="vehicle-info" style="flex:1">
+                <h4>Renault Zoe</h4>
+                <p>Type 2 · 52 kWh battery · Range: 245 mi</p>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="showToast('Set as primary','success')">Set Primary</button>
+            </div>
+            <button class="btn btn-outline btn-sm mt-2" onclick="showToast('Add vehicle coming soon','success')">+ Add Vehicle</button>
+          </div>
+
+          <!-- Notifications -->
+          <div class="card settings-section" id="notifications">
+            <h2 class="section-heading">Notifications</h2>
+            <div class="setting-row">
+              <div class="setting-info"><h4>Charging Complete</h4><p>Alert when your EV is fully charged</p></div>
+              <label class="switch"><input type="checkbox" checked><span class="slider-sw"></span></label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info"><h4>Session Reminders</h4><p>30 min before your booking starts</p></div>
+              <label class="switch"><input type="checkbox" checked><span class="slider-sw"></span></label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info"><h4>Price Alerts</h4><p>When off-peak rates are available near you</p></div>
+              <label class="switch"><input type="checkbox"><span class="slider-sw"></span></label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info"><h4>Weekly CO₂ Report</h4><p>Summary of your environmental impact</p></div>
+              <label class="switch"><input type="checkbox" checked><span class="slider-sw"></span></label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info"><h4>Marketing emails</h4><p>New features and promotions</p></div>
+              <label class="switch"><input type="checkbox"><span class="slider-sw"></span></label>
+            </div>
+          </div>
+
+          <!-- Payment -->
+          <div class="card settings-section" id="payment">
+            <h2 class="section-heading">Payment Methods</h2>
+            <div class="vehicle-card">
+              <div style="font-size:1.5rem">💳</div>
+              <div style="flex:1">
+                <div style="font-weight:500">Visa ending in 4242</div>
+                <div style="font-size:0.82rem;color:var(--text2)">Expires 09/2027</div>
+              </div>
+              <span class="tag tag-green">Default</span>
+            </div>
+            <button class="btn btn-outline btn-sm mt-2" onclick="showToast('Add payment method coming soon','success')">+ Add Card</button>
+          </div>
+
+          <!-- Plan -->
+          <div class="card settings-section" id="plan">
+            <h2 class="section-heading">Subscription Plan</h2>
+            <div class="plan-card">
+              <div class="plan-name">EVQ Pro ⚡</div>
+              <div class="plan-desc">Unlimited bookings · Priority stations · CO₂ reports · $9.99/month</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="showToast('Plan management coming soon','success')">Manage Plan</button>
+          </div>
+
+          <!-- Privacy -->
+          <div class="card settings-section" id="privacy">
+            <h2 class="section-heading">Privacy & Security</h2>
+            <div class="setting-row">
+              <div class="setting-info"><h4>Share Usage Data</h4><p>Help improve EVQ with anonymized data</p></div>
+              <label class="switch"><input type="checkbox" checked><span class="slider-sw"></span></label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info"><h4>Location Tracking</h4><p>Required for finding nearby stations</p></div>
+              <label class="switch"><input type="checkbox" checked><span class="slider-sw"></span></label>
+            </div>
+            <hr class="divider">
+            <div class="flex gap-2" style="flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" onclick="showToast('Password reset email sent','success')">Change Password</button>
+              <button class="btn btn-sm" style="background:rgba(255,82,82,0.1);color:var(--danger);border:1px solid rgba(255,82,82,0.2)" onclick="showToast('Account deletion requires email confirmation','danger')">Delete Account</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer><p>© 2025 EVQ — Smart EV Charging Platform</p></footer>
+  <script src="js/main.js"></script>
+  <script>
+    // Highlight active settings nav item on scroll
+    const sections = document.querySelectorAll('.settings-section');
+    const navLinks = document.querySelectorAll('.settings-nav a');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(s => {
+        if (window.scrollY >= s.offsetTop - 120) current = s.id;
+      });
+      navLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+      });
+    });
+  </script>
+</body>
+</html>
